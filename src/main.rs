@@ -110,28 +110,28 @@ fn main() {
             Key::Right => {
                 let prev_pos = position.clone();
 
-				if position.1 < 2 {
-					position.1 += 1;
-				} else {
-					position.1 = 0;
-				}
+                if position.1 < 2 {
+                    position.1 += 1;
+                } else {
+                    position.1 = 0;
+                }
 
-				let prev_state = match app_state[prev_pos.0][prev_pos.1] {
-					CellState::Me(prev) => prev,
-					_ => unreachable!("position and state is out of sync"),
-				};
-				app_state[prev_pos.0][prev_pos.1] = match prev_state {
-					PrevState::Empty => CellState::Empty,
-					PrevState::Ex => CellState::Ex,
-					PrevState::Oh => CellState::Oh,
-				};
-				let next_state = match app_state[position.0][position.1] {
-					CellState::Empty => PrevState::Empty,
-					CellState::Ex => PrevState::Ex,
-					CellState::Oh => PrevState::Oh,
-					_ => unreachable!(),
-				};
-				app_state[position.0][position.1] = CellState::Me(next_state);
+                let prev_state = match app_state[prev_pos.0][prev_pos.1] {
+                    CellState::Me(prev) => prev,
+                    _ => unreachable!("position and state is out of sync"),
+                };
+                app_state[prev_pos.0][prev_pos.1] = match prev_state {
+                    PrevState::Empty => CellState::Empty,
+                    PrevState::Ex => CellState::Ex,
+                    PrevState::Oh => CellState::Oh,
+                };
+                let next_state = match app_state[position.0][position.1] {
+                    CellState::Empty => PrevState::Empty,
+                    CellState::Ex => PrevState::Ex,
+                    CellState::Oh => PrevState::Oh,
+                    _ => unreachable!(),
+                };
+                app_state[position.0][position.1] = CellState::Me(next_state);
             }
             Key::Up => {
                 // do work
@@ -143,19 +143,19 @@ fn main() {
         }
 
         //
-		printing(
-			&mut stdout,
-			format!(
-				"{}{}{}{}{}{}{}",
-				termion::clear::AfterCursor,
-				termion::cursor::Goto(1, 1),
-				termion::color::Fg(termion::color::White),
-				termion::cursor::Hide,
-				logo.text,
-				draw(&app_state),
-				termion::cursor::Save
-			),
-		);
+        printing(
+            &mut stdout,
+            format!(
+                "{}{}{}{}{}{}{}",
+                termion::clear::AfterCursor,
+                termion::cursor::Goto(1, 1),
+                termion::color::Fg(termion::color::White),
+                termion::cursor::Hide,
+                logo.text,
+                draw(&app_state),
+                termion::cursor::Save
+            ),
+        );
     }
 }
 
