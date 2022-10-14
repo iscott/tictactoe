@@ -2,6 +2,7 @@
 extern crate cfonts;
 extern crate termion;
 
+use std::io;
 use std::io::{stdin, stdout, Write};
 use termion::event::Key;
 use termion::input::TermRead;
@@ -31,11 +32,16 @@ fn main() {
     // let thong: f32 = 0.5;
     // println!("Hello, world! NOT READ ONLY ANYMOOOAARRR {:?}", thing>thong);
 
-    let app_state: State = [
-		[CellState::Me(PrevState::Empty),CellState::Empty,CellState::Empty],
-		[CellState::Ex,CellState::Ex,CellState::Empty],
-		[CellState::Empty,CellState::Oh,CellState::Empty],
-	];
+    let mut app_state: State = [
+        [
+            CellState::Me(PrevState::Empty),
+            CellState::Ex,
+            CellState::Empty,
+        ],
+        [CellState::Ex, CellState::Ex, CellState::Empty],
+        [CellState::Empty, CellState::Oh, CellState::Empty],
+    ];
+    let mut position = (0, 0);
 
     // Return string
     let logo = cfonts::render(Options {
@@ -47,65 +53,115 @@ fn main() {
         ..Options::default()
     });
 
-    let header = draw(&app_state);
-
     // let size = termion::terminal_size();
 
-	// if let Ok((width, height)) = size {
-	// 	if width < min_width || height < min_height {
-	// 		panic!("\r\n\r\n{}This terminal is not big enough width width:{} height:{}\r\nTo play Battlefield you need at least width:{} height:{}{}\r\n\r\n", termion::color::Fg(termion::color::Red), width, height, min_width, min_height, termion::color::Fg(termion::color::Reset));
-	// 	}
-	// } else {
-	// 	panic!("The size of the terminal can't be determined");
-	// }
+    // if let Ok((width, height)) = size {
+    // 	if width < min_width || height < min_height {
+    // 		panic!("\r\n\r\n{}This terminal is not big enough width width:{} height:{}\r\nTo play Battlefield you need at least width:{} height:{}{}\r\n\r\n", termion::color::Fg(termion::color::Red), width, height, min_width, min_height, termion::color::Fg(termion::color::Reset));
+    // 	}
+    // } else {
+    // 	panic!("The size of the terminal can't be determined");
+    // }
 
     let mut stdout = stdout().into_raw_mode().unwrap();
 
-    write!(stdout, "{}{}", termion::color::Bg(termion::color::Black), termion::clear::All).unwrap();
-	stdout.flush().unwrap();
-    
     write!(
-		stdout,
-		"{}{}{}{}{}{}{}",
-		termion::clear::AfterCursor,
-		termion::cursor::Goto(1, 2),
-		termion::color::Fg(termion::color::White),
-		termion::cursor::Hide,
-		logo.text,
-		header,
-		termion::cursor::Save
-	)
-	.unwrap();
-	stdout.flush().unwrap();
+        stdout,
+        "{}{}",
+        termion::color::Bg(termion::color::Black),
+        termion::clear::All
+    )
+    .unwrap();
+    stdout.flush().unwrap();
 
+    printing(
+        &mut stdout,
+        format!(
+            "{}{}{}{}{}{}{}",
+            termion::clear::AfterCursor,
+            termion::cursor::Goto(1, 1),
+            termion::color::Fg(termion::color::White),
+            termion::cursor::Hide,
+            logo.text,
+            draw(&app_state),
+            termion::cursor::Save
+        ),
+    );
 
     for key in stdin().keys() {
-		match key.unwrap() {
-			Key::Esc | Key::Char('q') => {
-				write!(stdout, "{}{}", termion::cursor::Restore, termion::cursor::Show).unwrap();
-				stdout.flush().unwrap();
-				termion::raw::RawTerminal::suspend_raw_mode(&stdout).unwrap();
-				std::process::exit(0);
-			}
-			Key::Char('r') => {}
+        match key.unwrap() {
+            Key::Esc | Key::Char('q') => {
+                write!(
+                    stdout,
+                    "{}{}",
+                    termion::cursor::Restore,
+                    termion::cursor::Show
+                )
+                .unwrap();
+                stdout.flush().unwrap();
+                termion::raw::RawTerminal::suspend_raw_mode(&stdout).unwrap();
+                std::process::exit(0);
+            }
+            Key::Char('r') => {}
             // MOVEMENT
-			Key::Left => {
-				// do work
-			}
-			Key::Right => {
-				// do work
-			}
-			Key::Up => {
-				// do work
-			}
-			Key::Down => {
-				// do work
+            Key::Left => {
+                // do work
+            }
+            Key::Right => {
+                let prev_pos = position.clone();
+
+				if position.1 < 2 {
+					position.1 += 1;
+				} else {
+					position.1 = 0;
+				}
+
+				let prev_state = match app_state[prev_pos.0][prev_pos.1] {
+					CellState::Me(prev) => prev,
+					_ => unreachable!("position and state is out of sync"),
+				};
+				app_state[prev_pos.0][prev_pos.1] = match prev_state {
+					PrevState::Empty => CellState::Empty,
+					PrevState::Ex => CellState::Ex,
+					PrevState::Oh => CellState::Oh,
+				};
+				let next_state = match app_state[position.0][position.1] {
+					CellState::Empty => PrevState::Empty,
+					CellState::Ex => PrevState::Ex,
+					CellState::Oh => PrevState::Oh,
+					_ => unreachable!(),
+				};
+				app_state[position.0][position.1] = CellState::Me(next_state);
+            }
+            Key::Up => {
+                // do work
+            }
+            Key::Down => {
+                // do work
             }
             _ => {}
         }
-        // draw everything
-    }
 
+        //
+		printing(
+			&mut stdout,
+			format!(
+				"{}{}{}{}{}{}{}",
+				termion::clear::AfterCursor,
+				termion::cursor::Goto(1, 1),
+				termion::color::Fg(termion::color::White),
+				termion::cursor::Hide,
+				logo.text,
+				draw(&app_state),
+				termion::cursor::Save
+			),
+		);
+    }
+}
+
+fn printing(stdout: &mut dyn io::Write, thing: String) {
+    write!(stdout, "{}", thing.replace("\n", "\r\n")).unwrap();
+    stdout.flush().unwrap();
 }
 
 /// This draw function draws our state to a human display thongo
@@ -121,26 +177,26 @@ fn main() {
 /// assert_eq!(draw(&state), result);
 /// ```
 fn draw(state: &State) -> String {
-	let mut output = String::new();
-	output += &format!("\n\n ╔═══╦═══╦═══╗\n ║");
+    let mut output = String::new();
+    output += &format!("\n\n ╔═══╦═══╦═══╗\n ║");
 
-	for (i, line) in state.iter().enumerate() {
-		for cell in line.iter() {
-			let this_cell = match cell {
-				CellState::Empty =>  "  ".to_string(),
-				CellState::Ex =>  " X".to_string(),
-				CellState::Oh => " O".to_string(),
+    for (i, line) in state.iter().enumerate() {
+        for cell in line.iter() {
+            let this_cell = match cell {
+                CellState::Empty => "  ".to_string(),
+                CellState::Ex => " X".to_string(),
+                CellState::Oh => " O".to_string(),
                 CellState::Me(_) => " •".to_string(),
-			};
-			output += &format!("{} ║", this_cell);
-		}
-		if i != 2 {
-			output += &format!("\n ╠═══╬═══╬═══╣\n ║");
-		} else {
-			output += &format!("\n");
-		}
-	}
-	output += &format!(" ╚═══╩═══╩═══╝");
+            };
+            output += &format!("{} ║", this_cell);
+        }
+        if i != 2 {
+            output += &format!("\n ╠═══╬═══╬═══╣\n ║");
+        } else {
+            output += &format!("\n");
+        }
+    }
+    output += &format!(" ╚═══╩═══╩═══╝");
 
     // "
     // ╔═══╦═══╦═══╗
