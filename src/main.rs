@@ -89,6 +89,7 @@ fn main() {
     );
 
     for key in stdin().keys() {
+		// clone
         match key.unwrap() {
             Key::Esc | Key::Char('q') => {
                 write!(
