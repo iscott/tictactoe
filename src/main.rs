@@ -134,7 +134,13 @@ fn main() {
                 }
             }
             Key::Down => {
-                // do work
+                prev_pos = position.clone();
+
+                if position.0 == 2 {
+                    position.0 = 0;
+                } else {
+                    position.0 += 1;
+                }
             }
             _ => {}
         }
