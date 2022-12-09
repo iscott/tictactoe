@@ -125,7 +125,13 @@ fn main() {
                 }
             }
             Key::Up => {
-                // do work
+                prev_pos = position.clone();
+
+                if position.0 == 0 {
+                    position.0 = 2;
+                } else {
+                    position.0 -= 1;
+                }
             }
             Key::Down => {
                 // do work
