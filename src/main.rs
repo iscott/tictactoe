@@ -42,6 +42,7 @@ fn main() {
         [CellState::Empty, CellState::Oh, CellState::Empty],
     ];
     let mut position = (0, 0);
+    let mut prev_pos = (0, 0);
 
     // Return string
     let logo = cfonts::render(Options {
@@ -106,33 +107,22 @@ fn main() {
             Key::Char('r') => {}
             // MOVEMENT
             Key::Left => {
-                // do work
+                prev_pos = position.clone();
+
+                if position.1 == 0 {
+                    position.1 = 2;
+                } else {
+                    position.1 -= 1;
+                }
             }
             Key::Right => {
-                let prev_pos = position.clone();
+                prev_pos = position.clone();
 
                 if position.1 < 2 {
                     position.1 += 1;
                 } else {
                     position.1 = 0;
                 }
-
-                let prev_state = match app_state[prev_pos.0][prev_pos.1] {
-                    CellState::Me(prev) => prev,
-                    _ => unreachable!("position and state is out of sync"),
-                };
-                app_state[prev_pos.0][prev_pos.1] = match prev_state {
-                    PrevState::Empty => CellState::Empty,
-                    PrevState::Ex => CellState::Ex,
-                    PrevState::Oh => CellState::Oh,
-                };
-                let next_state = match app_state[position.0][position.1] {
-                    CellState::Empty => PrevState::Empty,
-                    CellState::Ex => PrevState::Ex,
-                    CellState::Oh => PrevState::Oh,
-                    _ => unreachable!(),
-                };
-                app_state[position.0][position.1] = CellState::Me(next_state);
             }
             Key::Up => {
                 // do work
@@ -142,6 +132,23 @@ fn main() {
             }
             _ => {}
         }
+
+        let prev_state = match app_state[prev_pos.0][prev_pos.1] {
+            CellState::Me(prev) => prev,
+            _ => unreachable!("position and state is out of sync"),
+        };
+        app_state[prev_pos.0][prev_pos.1] = match prev_state {
+            PrevState::Empty => CellState::Empty,
+            PrevState::Ex => CellState::Ex,
+            PrevState::Oh => CellState::Oh,
+        };
+        let next_state = match app_state[position.0][position.1] {
+            CellState::Empty => PrevState::Empty,
+            CellState::Ex => PrevState::Ex,
+            CellState::Oh => PrevState::Oh,
+            _ => unreachable!(),
+        };
+        app_state[position.0][position.1] = CellState::Me(next_state);
 
         //
         printing(
