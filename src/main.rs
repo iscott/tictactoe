@@ -10,7 +10,7 @@ use termion::raw::IntoRawMode;
 
 use cfonts::{Align, BgColors, Fonts, Options};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum PrevState {
     Empty,
     Ex,
@@ -107,8 +107,16 @@ fn main() {
                 print!("\n");
                 std::process::exit(0);
             }
-            Key::Char(' ') => {
-                println!("Spacebar pressed");
+            Key::Char(' ') | Key::Char('\n') => {
+                println!("Spacebar or Enter key pressed");
+
+                let below_state = match app_state[position.0][position.1] {
+                    CellState::Me(prev) => prev,
+                    _ => unreachable!("position and state is out of sync"),
+                };
+                if below_state == PrevState::Empty {
+                    println!("????");
+                } else { /* we ignore this illegal move */ }
             }
             // MOVEMENT
             Key::Left => {
