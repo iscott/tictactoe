@@ -116,7 +116,8 @@ fn main() {
                 };
                 if below_state == PrevState::Empty {
                     println!("????");
-                } else { /* we ignore this illegal move */ }
+                } else { /* we ignore this illegal move */
+                }
             }
             // MOVEMENT
             Key::Left => {
@@ -211,7 +212,14 @@ fn draw(state: &State) -> String {
                 CellState::Empty => "  ".to_string(),
                 CellState::Ex => " X".to_string(),
                 CellState::Oh => " O".to_string(),
-                CellState::Me(_) => " •".to_string(),
+                CellState::Me(x) => {
+                    // TODO
+                    match x {
+                        PrevState::Empty => "  ".to_string(),
+                        PrevState::Ex => " X".to_string(),
+                        PrevState::Oh => " O".to_string(),
+                    }
+                }
             };
             output += &format!("{} ║", this_cell);
         }
