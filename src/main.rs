@@ -90,7 +90,9 @@ fn main() {
     );
 
     for key in stdin().keys() {
-		// clone
+        prev_pos = position.clone();
+
+        // clone
         match key.unwrap() {
             Key::Esc | Key::Char('q') => {
                 write!(
@@ -102,13 +104,14 @@ fn main() {
                 .unwrap();
                 stdout.flush().unwrap();
                 termion::raw::RawTerminal::suspend_raw_mode(&stdout).unwrap();
+                print!("\n");
                 std::process::exit(0);
             }
-            Key::Char('r') => {}
+            Key::Char(' ') => {
+                println!("Spacebar pressed");
+            }
             // MOVEMENT
             Key::Left => {
-                prev_pos = position.clone();
-
                 if position.1 == 0 {
                     position.1 = 2;
                 } else {
@@ -116,8 +119,6 @@ fn main() {
                 }
             }
             Key::Right => {
-                prev_pos = position.clone();
-
                 if position.1 < 2 {
                     position.1 += 1;
                 } else {
@@ -125,8 +126,6 @@ fn main() {
                 }
             }
             Key::Up => {
-                prev_pos = position.clone();
-
                 if position.0 == 0 {
                     position.0 = 2;
                 } else {
@@ -134,8 +133,6 @@ fn main() {
                 }
             }
             Key::Down => {
-                prev_pos = position.clone();
-
                 if position.0 == 2 {
                     position.0 = 0;
                 } else {
