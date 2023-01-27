@@ -209,19 +209,19 @@ fn draw(state: &State) -> String {
     for (i, line) in state.iter().enumerate() {
         for cell in line.iter() {
             let this_cell = match cell {
-                CellState::Empty => "  ".to_string(),
-                CellState::Ex => " X".to_string(),
-                CellState::Oh => " O".to_string(),
+                CellState::Empty => "   ".to_string(),
+                CellState::Ex => " X ".to_string(),
+                CellState::Oh => " O ".to_string(),
                 CellState::Me(x) => {
                     // TODO
                     match x {
-                        PrevState::Empty => "  ".to_string(),
-                        PrevState::Ex => " X".to_string(),
-                        PrevState::Oh => " O".to_string(),
+                        PrevState::Empty => "\x1b[42m\x1b[30m   \x1b[39m\x1b[49m".to_string(),
+                        PrevState::Ex => "\x1b[42m\x1b[30m X \x1b[39m\x1b[49m".to_string(),
+                        PrevState::Oh => "\x1b[42m\x1b[30m O \x1b[39m\x1b[49m".to_string(),
                     }
                 }
             };
-            output += &format!("{} ║", this_cell);
+            output += &format!("{}║", this_cell);
         }
         if i != 2 {
             output += &format!("\n ╠═══╬═══╬═══╣\n ║");
