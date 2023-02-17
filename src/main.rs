@@ -17,7 +17,7 @@ enum PrevState {
     Oh,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum CellState {
     Empty,
     Ex,
@@ -35,12 +35,13 @@ fn main() {
     let mut app_state: State = [
         [
             CellState::Me(PrevState::Empty),
-            CellState::Ex,
+            CellState::Empty,
             CellState::Empty,
         ],
-        [CellState::Ex, CellState::Ex, CellState::Empty],
-        [CellState::Empty, CellState::Oh, CellState::Empty],
+        [CellState::Empty; 3],
+        [CellState::Empty; 3],
     ];
+    let mut turn = PrevState::Ex;
     let mut position = (0, 0);
     let mut prev_pos = (0, 0);
 
@@ -94,6 +95,7 @@ fn main() {
 
         // clone
         match key.unwrap() {
+            // KILL SWITCH
             Key::Esc | Key::Char('q') => {
                 write!(
                     stdout,
@@ -106,18 +108,6 @@ fn main() {
                 termion::raw::RawTerminal::suspend_raw_mode(&stdout).unwrap();
                 print!("\n");
                 std::process::exit(0);
-            }
-            Key::Char(' ') | Key::Char('\n') => {
-                println!("Spacebar or Enter key pressed");
-
-                let below_state = match app_state[position.0][position.1] {
-                    CellState::Me(prev) => prev,
-                    _ => unreachable!("position and state is out of sync"),
-                };
-                if below_state == PrevState::Empty {
-                    println!("????");
-                } else { /* we ignore this illegal move */
-                }
             }
             // MOVEMENT
             Key::Left => {
@@ -148,6 +138,20 @@ fn main() {
                     position.0 += 1;
                 }
             }
+            // MAKING YOU MOVE
+            Key::Char(' ') | Key::Char('\n') => {
+                println!("Spacebar or Enter key pressed");
+
+                let below_state = match app_state[position.0][position.1] {
+                    CellState::Me(prev) => prev,
+                    _ => unreachable!("position and state is out of sync"),
+                };
+                if below_state == PrevState::Empty {
+                    app_state[position.0][position.1] = CellState::Me(turn);
+                    turn = swap_turn(&turn);
+                } else { /* we ignore this illegal move */
+                }
+            }
             _ => {}
         }
 
@@ -168,7 +172,7 @@ fn main() {
         };
         app_state[position.0][position.1] = CellState::Me(next_state);
 
-        //
+        // draw the board
         printing(
             &mut stdout,
             format!(
@@ -182,12 +186,47 @@ fn main() {
                 termion::cursor::Save
             ),
         );
+
+        // check for end of game
     }
 }
 
 fn printing(stdout: &mut dyn io::Write, thing: String) {
     write!(stdout, "{}", thing.replace("\n", "\r\n")).unwrap();
     stdout.flush().unwrap();
+}
+
+// TODO (Hi 👋 future Ira and Dom)
+// (0,0), (0,1), (0,2)
+// (1,0), (1,1), (1,2)
+// (2,0), (2,1), (2,2)
+
+// (0,0), (1,0), (2,0)
+// (0,1), (1,1), (2,1)
+// (0,2), (1,2), (2,2)
+
+// (0,0), (1,1), (2,2)
+// (0,2), (1,1), (2,0)
+
+// Count empties -> no empty = end of game
+// GameResult::WinEx
+// GameResult::WinOh
+// GameResult::Tie
+// GameResult::OnGoing
+
+fn swap_turn(turn: &PrevState) -> PrevState {
+    match *turn {
+        PrevState::Ex => PrevState::Oh,
+        PrevState::Oh => PrevState::Ex,
+        PrevState::Empty => PrevState::Empty,
+    }
+}
+
+#[test]
+fn swap_turn_works() {
+    assert_eq!(swap_turn(&PrevState::Oh), PrevState::Ex);
+    assert_eq!(swap_turn(&PrevState::Ex), PrevState::Oh);
+    assert_eq!(swap_turn(&PrevState::Empty), PrevState::Empty);
 }
 
 /// This draw function draws our state to a human display thongo
