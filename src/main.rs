@@ -2,6 +2,7 @@
 extern crate cfonts;
 extern crate termion;
 
+use std::cell::Cell;
 use std::io;
 use std::io::{stdin, stdout, Write};
 use termion::event::Key;
@@ -23,6 +24,13 @@ enum CellState {
     Ex,
     Oh,
     Me(PrevState),
+}
+
+enum GameResult {
+    WinEx,
+    WinOh,
+    Tie,
+    OnGoing,
 }
 
 type State = [[CellState; 3]; 3];
@@ -188,6 +196,8 @@ fn main() {
         );
 
         // check for end of game
+
+
     }
 }
 
@@ -213,6 +223,49 @@ fn printing(stdout: &mut dyn io::Write, thing: String) {
 // GameResult::WinOh
 // GameResult::Tie
 // GameResult::OnGoing
+
+fn game_status(app_state: &State) -> GameResult {
+    let mut result = GameResult::OnGoing;
+    let win_conditions = [
+        [(0,0), (0,1), (0,2)],
+        [(1,0), (1,1), (1,2)],
+        [(2,0), (2,1), (2,2)],
+        [(0,0), (1,0), (2,0)],
+        [(0,1), (1,1), (2,1)],
+        [(0,2), (1,2), (2,2)],
+        [(0,0), (1,1), (2,2)],
+        [(0,2), (1,1), (2,0)],
+    ];
+    
+    for wins in win_conditions {
+        if app_state[wins[0].0] == app_state[wins[0].1] &&
+            app_state[wins[0].0] == app_state[wins[1].0] &&
+            app_state[wins[0].0] == app_state[wins[1].1] &&
+            app_state[wins[0].0] == app_state[wins[2].0] &&
+            app_state[wins[0].0] == app_state[wins[3].1] {
+            // &&
+            // app_state[wins[0].0] != CellState::Empty {
+                result = match app_state[wins[0].0] {
+                    CellState::Ex => GameResult::WinEx,
+                    CellState::Oh => GameResult::WinOh,
+                }
+                break;
+            }
+    }
+
+    result
+}
+
+#[test]
+fn test_game_status() {
+    let mut state = [[State::Empty; 3]; 3];
+    assert_eq!(game_status(&state), GameResult::OnGoing);
+    // Change state
+    state[0][0] = CellState::Ex;
+    state[1][0] = CellState::Ex;
+    state[2][0] = CellState::Ex;
+    assert_eq!(game_status(&state), GameResult::WinEx);
+}
 
 fn swap_turn(turn: &PrevState) -> PrevState {
     match *turn {
