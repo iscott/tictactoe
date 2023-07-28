@@ -2,7 +2,6 @@
 extern crate cfonts;
 extern crate termion;
 
-use std::cell::Cell;
 use std::io;
 use std::io::{stdin, stdout, Write};
 use termion::event::Key;
@@ -26,6 +25,7 @@ enum CellState {
     Me(PrevState),
 }
 
+#[derive(Debug, PartialEq)]
 enum GameResult {
     WinEx,
     WinOh,
@@ -51,7 +51,7 @@ fn main() {
     ];
     let mut turn = PrevState::Ex;
     let mut position = (0, 0);
-    let mut prev_pos = (0, 0);
+    let mut turn_counter = 0_u8;
 
     // Return string
     let logo = cfonts::render(Options {
@@ -99,7 +99,7 @@ fn main() {
     );
 
     for key in stdin().keys() {
-        prev_pos = position.clone();
+        let prev_pos = position.clone();
 
         // clone
         match key.unwrap() {
@@ -157,6 +157,7 @@ fn main() {
                 if below_state == PrevState::Empty {
                     app_state[position.0][position.1] = CellState::Me(turn);
                     turn = swap_turn(&turn);
+                    turn_counter += 1;
                 } else { /* we ignore this illegal move */
                 }
             }
@@ -195,9 +196,17 @@ fn main() {
             ),
         );
 
-        // check for end of game
-
-
+        match game_status(&app_state, &turn_counter) {
+            GameResult::Tie => {
+                println!("noone wins!!!");
+                break;
+            }
+            GameResult::WinEx | GameResult::WinOh => {
+                println!("someone wins!!!");
+                break;
+            },
+            _ => {},
+        }
     }
 }
 
@@ -224,7 +233,7 @@ fn printing(stdout: &mut dyn io::Write, thing: String) {
 // GameResult::Tie
 // GameResult::OnGoing
 
-fn game_status(app_state: &State) -> GameResult {
+fn game_status(app_state: &State, turn_counter: &u8) -> GameResult {
     let mut result = GameResult::OnGoing;
     let win_conditions = [
         [(0,0), (0,1), (0,2)],
@@ -236,19 +245,66 @@ fn game_status(app_state: &State) -> GameResult {
         [(0,0), (1,1), (2,2)],
         [(0,2), (1,1), (2,0)],
     ];
+
+    if *turn_counter >= 9 {
+        return GameResult::Tie;
+    }
     
     for wins in win_conditions {
-        if app_state[wins[0].0] == app_state[wins[0].1] &&
-            app_state[wins[0].0] == app_state[wins[1].0] &&
-            app_state[wins[0].0] == app_state[wins[1].1] &&
-            app_state[wins[0].0] == app_state[wins[2].0] &&
-            app_state[wins[0].0] == app_state[wins[3].1] {
-            // &&
-            // app_state[wins[0].0] != CellState::Empty {
-                result = match app_state[wins[0].0] {
+        let pos1 = match app_state[wins[0].0][wins[0].1] {
+            CellState::Ex => CellState::Ex,
+            CellState::Oh => CellState::Oh,
+            CellState::Empty => CellState::Empty,
+            CellState::Me(x) => {
+                match x {
+                    PrevState::Empty =>  CellState::Empty,
+                    PrevState::Ex => CellState::Ex,
+                    PrevState::Oh => CellState::Oh,
+                }
+            }
+        };
+
+        let pos2 = match app_state[wins[1].0][wins[1].1] {
+            CellState::Ex => CellState::Ex,
+            CellState::Oh => CellState::Oh,
+            CellState::Empty => CellState::Empty,
+            CellState::Me(x) => {
+                match x {
+                    PrevState::Empty =>  CellState::Empty,
+                    PrevState::Ex => CellState::Ex,
+                    PrevState::Oh => CellState::Oh,
+                }
+            }
+        };
+
+        let pos3 = match app_state[wins[2].0][wins[2].1] {
+            CellState::Ex => CellState::Ex,
+            CellState::Oh => CellState::Oh,
+            CellState::Empty => CellState::Empty,
+            CellState::Me(x) => {
+                match x {
+                    PrevState::Empty =>  CellState::Empty,
+                    PrevState::Ex => CellState::Ex,
+                    PrevState::Oh => CellState::Oh,
+                }
+            }
+        };
+
+        if pos1 == pos2 &&
+            pos1 == pos3 &&
+            pos1 != CellState::Empty {
+                result = match pos1 {
                     CellState::Ex => GameResult::WinEx,
                     CellState::Oh => GameResult::WinOh,
-                }
+                    CellState::Me(x) => {
+                        match x {
+                            PrevState::Empty =>  GameResult::OnGoing,
+                            PrevState::Ex => GameResult::WinEx,
+                            PrevState::Oh => GameResult::WinOh,
+                        }
+                    }
+                    CellState::Empty => GameResult::OnGoing,
+                };
                 break;
             }
     }
