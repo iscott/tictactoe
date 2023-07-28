@@ -215,24 +215,6 @@ fn printing(stdout: &mut dyn io::Write, thing: String) {
     stdout.flush().unwrap();
 }
 
-// TODO (Hi 👋 future Ira and Dom)
-// (0,0), (0,1), (0,2)
-// (1,0), (1,1), (1,2)
-// (2,0), (2,1), (2,2)
-
-// (0,0), (1,0), (2,0)
-// (0,1), (1,1), (2,1)
-// (0,2), (1,2), (2,2)
-
-// (0,0), (1,1), (2,2)
-// (0,2), (1,1), (2,0)
-
-// Count empties -> no empty = end of game
-// GameResult::WinEx
-// GameResult::WinOh
-// GameResult::Tie
-// GameResult::OnGoing
-
 fn game_status(app_state: &State, turn_counter: &u8) -> GameResult {
     let mut result = GameResult::OnGoing;
     let win_conditions = [
@@ -423,3 +405,6 @@ fn draw_test() {
 // *reference // <-- dereference (compiler gets value)
 
 // TODO: Macros
+
+// TODO: Print who won instead of generic message
+// TODO: Ask if user wants to play another game
