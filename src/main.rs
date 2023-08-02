@@ -10,6 +10,8 @@ use termion::raw::IntoRawMode;
 
 use cfonts::{Align, BgColors, Fonts, Options};
 
+use std::fmt::{Display, Formatter, Result};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum PrevState {
     Empty,
@@ -31,6 +33,16 @@ enum GameResult {
     WinOh,
     Tie,
     OnGoing,
+}
+
+impl Display for GameResult {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        return match *self {
+            GameResult::WinEx => write!(f, "Player X"),
+            GameResult::WinOh => write!(f, "Player O"),
+            _ => write!(f, r"¯\_(ツ)_/¯"),
+        };
+    }
 }
 
 type State = [[CellState; 3]; 3];
@@ -148,8 +160,6 @@ fn main() {
             }
             // MAKING YOU MOVE
             Key::Char(' ') | Key::Char('\n') => {
-                println!("Spacebar or Enter key pressed");
-
                 let below_state = match app_state[position.0][position.1] {
                     CellState::Me(prev) => prev,
                     _ => unreachable!("position and state is out of sync"),
@@ -196,16 +206,10 @@ fn main() {
             ),
         );
 
-        match game_status(&app_state, &turn_counter) {
-            GameResult::Tie => {
-                println!("noone wins!!!");
-                break;
-            }
-            GameResult::WinEx | GameResult::WinOh => {
-                println!("someone wins!!!");
-                break;
-            },
-            _ => {},
+        let result = game_status(&app_state, &turn_counter);
+        if result == GameResult::WinEx || result == GameResult::WinOh || result == GameResult::Tie {
+            println!("\n\x1b[2G\n{result} wins!!!");
+            break;
         }
     }
 }
@@ -218,77 +222,67 @@ fn printing(stdout: &mut dyn io::Write, thing: String) {
 fn game_status(app_state: &State, turn_counter: &u8) -> GameResult {
     let mut result = GameResult::OnGoing;
     let win_conditions = [
-        [(0,0), (0,1), (0,2)],
-        [(1,0), (1,1), (1,2)],
-        [(2,0), (2,1), (2,2)],
-        [(0,0), (1,0), (2,0)],
-        [(0,1), (1,1), (2,1)],
-        [(0,2), (1,2), (2,2)],
-        [(0,0), (1,1), (2,2)],
-        [(0,2), (1,1), (2,0)],
+        [(0, 0), (0, 1), (0, 2)],
+        [(1, 0), (1, 1), (1, 2)],
+        [(2, 0), (2, 1), (2, 2)],
+        [(0, 0), (1, 0), (2, 0)],
+        [(0, 1), (1, 1), (2, 1)],
+        [(0, 2), (1, 2), (2, 2)],
+        [(0, 0), (1, 1), (2, 2)],
+        [(0, 2), (1, 1), (2, 0)],
     ];
 
     if *turn_counter >= 9 {
         return GameResult::Tie;
     }
-    
+
     for wins in win_conditions {
         let pos1 = match app_state[wins[0].0][wins[0].1] {
             CellState::Ex => CellState::Ex,
             CellState::Oh => CellState::Oh,
             CellState::Empty => CellState::Empty,
-            CellState::Me(x) => {
-                match x {
-                    PrevState::Empty =>  CellState::Empty,
-                    PrevState::Ex => CellState::Ex,
-                    PrevState::Oh => CellState::Oh,
-                }
-            }
+            CellState::Me(x) => match x {
+                PrevState::Empty => CellState::Empty,
+                PrevState::Ex => CellState::Ex,
+                PrevState::Oh => CellState::Oh,
+            },
         };
 
         let pos2 = match app_state[wins[1].0][wins[1].1] {
             CellState::Ex => CellState::Ex,
             CellState::Oh => CellState::Oh,
             CellState::Empty => CellState::Empty,
-            CellState::Me(x) => {
-                match x {
-                    PrevState::Empty =>  CellState::Empty,
-                    PrevState::Ex => CellState::Ex,
-                    PrevState::Oh => CellState::Oh,
-                }
-            }
+            CellState::Me(x) => match x {
+                PrevState::Empty => CellState::Empty,
+                PrevState::Ex => CellState::Ex,
+                PrevState::Oh => CellState::Oh,
+            },
         };
 
         let pos3 = match app_state[wins[2].0][wins[2].1] {
             CellState::Ex => CellState::Ex,
             CellState::Oh => CellState::Oh,
             CellState::Empty => CellState::Empty,
-            CellState::Me(x) => {
-                match x {
-                    PrevState::Empty =>  CellState::Empty,
-                    PrevState::Ex => CellState::Ex,
-                    PrevState::Oh => CellState::Oh,
-                }
-            }
+            CellState::Me(x) => match x {
+                PrevState::Empty => CellState::Empty,
+                PrevState::Ex => CellState::Ex,
+                PrevState::Oh => CellState::Oh,
+            },
         };
 
-        if pos1 == pos2 &&
-            pos1 == pos3 &&
-            pos1 != CellState::Empty {
-                result = match pos1 {
-                    CellState::Ex => GameResult::WinEx,
-                    CellState::Oh => GameResult::WinOh,
-                    CellState::Me(x) => {
-                        match x {
-                            PrevState::Empty =>  GameResult::OnGoing,
-                            PrevState::Ex => GameResult::WinEx,
-                            PrevState::Oh => GameResult::WinOh,
-                        }
-                    }
-                    CellState::Empty => GameResult::OnGoing,
-                };
-                break;
-            }
+        if pos1 == pos2 && pos1 == pos3 && pos1 != CellState::Empty {
+            result = match pos1 {
+                CellState::Ex => GameResult::WinEx,
+                CellState::Oh => GameResult::WinOh,
+                CellState::Me(x) => match x {
+                    PrevState::Empty => GameResult::OnGoing,
+                    PrevState::Ex => GameResult::WinEx,
+                    PrevState::Oh => GameResult::WinOh,
+                },
+                CellState::Empty => GameResult::OnGoing,
+            };
+            break;
+        }
     }
 
     result
@@ -406,5 +400,4 @@ fn draw_test() {
 
 // TODO: Macros
 
-// TODO: Print who won instead of generic message
 // TODO: Ask if user wants to play another game
