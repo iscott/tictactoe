@@ -408,6 +408,7 @@ fn draw_test() {
 
 // TODO: Macros
 
-// TODO: Ask if user wants to play another game
+// TODO: Ask if user wants to play another game Y or N. Implement Default state to reset app_state. Do this using state in the game loop.
+// TODO: Keep score (games won by each player)
 // TODO: Test functions/coverage
 // TODO: AI - play against the computer
