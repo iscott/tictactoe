@@ -171,6 +171,7 @@ fn main() {
                 } else { /* we ignore this illegal move */
                 }
             }
+            // TODO
             _ => {}
         }
 
@@ -206,11 +207,17 @@ fn main() {
             ),
         );
 
+        // TODO: wrap this into a function
         let result = game_status(&app_state, &turn_counter);
         if result == GameResult::WinEx || result == GameResult::WinOh || result == GameResult::Tie {
             println!("\n\x1b[2G\n{result} wins!!!");
             break;
         }
+
+        // TODO: here we ask the AI to move
+        // AI::move(game_state)
+
+        // Call the function to testing if the game has ended
     }
 }
 
@@ -232,6 +239,7 @@ fn game_status(app_state: &State, turn_counter: &u8) -> GameResult {
         [(0, 2), (1, 1), (2, 0)],
     ];
 
+    // TODO: count how many Empty can we find in game_state?
     if *turn_counter >= 9 {
         return GameResult::Tie;
     }
@@ -401,3 +409,5 @@ fn draw_test() {
 // TODO: Macros
 
 // TODO: Ask if user wants to play another game
+// TODO: Test functions/coverage
+// TODO: AI - play against the computer
