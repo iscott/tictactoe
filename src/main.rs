@@ -64,6 +64,7 @@ fn main() {
     let mut turn = PrevState::Ex;
     let mut position = (0, 0);
     let mut turn_counter = 0_u8;
+    let mut is_on_going = true;
 
     // Return string
     let logo = cfonts::render(Options {
@@ -131,87 +132,147 @@ fn main() {
             }
             // MOVEMENT
             Key::Left => {
-                if position.1 == 0 {
-                    position.1 = 2;
-                } else {
-                    position.1 -= 1;
+                if is_on_going {
+                    if position.1 == 0 {
+                        position.1 = 2;
+                    } else {
+                        position.1 -= 1;
+                    }
                 }
             }
             Key::Right => {
-                if position.1 < 2 {
-                    position.1 += 1;
-                } else {
-                    position.1 = 0;
+                if is_on_going {
+                    if position.1 < 2 {
+                        position.1 += 1;
+                    } else {
+                        position.1 = 0;
+                    }
                 }
             }
             Key::Up => {
-                if position.0 == 0 {
-                    position.0 = 2;
-                } else {
-                    position.0 -= 1;
+                if is_on_going {
+                    if position.0 == 0 {
+                        position.0 = 2;
+                    } else {
+                        position.0 -= 1;
+                    }
                 }
             }
             Key::Down => {
-                if position.0 == 2 {
-                    position.0 = 0;
-                } else {
-                    position.0 += 1;
+                if is_on_going {
+                    if position.0 == 2 {
+                        position.0 = 0;
+                    } else {
+                        position.0 += 1;
+                    }
                 }
             }
             // MAKING YOU MOVE
             Key::Char(' ') | Key::Char('\n') => {
-                let below_state = match app_state[position.0][position.1] {
-                    CellState::Me(prev) => prev,
-                    _ => unreachable!("position and state is out of sync"),
-                };
-                if below_state == PrevState::Empty {
-                    app_state[position.0][position.1] = CellState::Me(turn);
-                    turn = swap_turn(&turn);
-                    turn_counter += 1;
-                } else { /* we ignore this illegal move */
+                if is_on_going {
+                    let below_state = match app_state[position.0][position.1] {
+                        CellState::Me(prev) => prev,
+                        _ => unreachable!("position and state is out of sync"),
+                    };
+                    if below_state == PrevState::Empty {
+                        app_state[position.0][position.1] = CellState::Me(turn);
+                        turn = swap_turn(&turn);
+                        turn_counter += 1;
+                    } else { /* we ignore this illegal move */
+                    }
+                }
+            }
+            Key::Char(c) => {
+                if c == 'y' && !is_on_going {
+                    is_on_going = true;
+                    write!(
+                        stdout,
+                        "{}{}",
+                        termion::color::Bg(termion::color::Black),
+                        termion::clear::All
+                    )
+                    .unwrap();
+                    stdout.flush().unwrap();
+                    // TODO: clear and draw
+                }
+                if c == 'n' && !is_on_going {
+                    write!(
+                        stdout,
+                        "{}{}",
+                        termion::cursor::Restore,
+                        termion::cursor::Show
+                    )
+                    .unwrap();
+                    stdout.flush().unwrap();
+                    termion::raw::RawTerminal::suspend_raw_mode(&stdout).unwrap();
+                    print!("\n");
+                    std::process::exit(0);
                 }
             }
             // TODO
             _ => {}
         }
 
-        let prev_state = match app_state[prev_pos.0][prev_pos.1] {
-            CellState::Me(prev) => prev,
-            _ => unreachable!("position and state is out of sync"),
-        };
-        app_state[prev_pos.0][prev_pos.1] = match prev_state {
-            PrevState::Empty => CellState::Empty,
-            PrevState::Ex => CellState::Ex,
-            PrevState::Oh => CellState::Oh,
-        };
-        let next_state = match app_state[position.0][position.1] {
-            CellState::Empty => PrevState::Empty,
-            CellState::Ex => PrevState::Ex,
-            CellState::Oh => PrevState::Oh,
-            _ => unreachable!(),
-        };
-        app_state[position.0][position.1] = CellState::Me(next_state);
+        if is_on_going {
+            let prev_state = match app_state[prev_pos.0][prev_pos.1] {
+                CellState::Me(prev) => prev,
+                _ => unreachable!("position and state is out of sync"),
+            };
+            app_state[prev_pos.0][prev_pos.1] = match prev_state {
+                PrevState::Empty => CellState::Empty,
+                PrevState::Ex => CellState::Ex,
+                PrevState::Oh => CellState::Oh,
+            };
+            let next_state = match app_state[position.0][position.1] {
+                CellState::Empty => PrevState::Empty,
+                CellState::Ex => PrevState::Ex,
+                CellState::Oh => PrevState::Oh,
+                _ => unreachable!(),
+            };
+            app_state[position.0][position.1] = CellState::Me(next_state);
 
-        // draw the board
-        printing(
-            &mut stdout,
-            format!(
-                "{}{}{}{}{}{}{}",
-                termion::clear::AfterCursor,
-                termion::cursor::Goto(1, 1),
-                termion::color::Fg(termion::color::White),
-                termion::cursor::Hide,
-                logo.text,
-                draw(&app_state),
-                termion::cursor::Save
-            ),
-        );
+            // draw the board
+            printing(
+                &mut stdout,
+                format!(
+                    "{}{}{}{}{}{}{}",
+                    termion::clear::AfterCursor,
+                    termion::cursor::Goto(1, 1),
+                    termion::color::Fg(termion::color::White),
+                    termion::cursor::Hide,
+                    logo.text,
+                    draw(&app_state),
+                    termion::cursor::Save
+                ),
+            );
+        }
 
         // TODO: wrap this into a function
         let result = game_status(&app_state, &turn_counter);
         if result == GameResult::WinEx || result == GameResult::WinOh || result == GameResult::Tie {
-            println!("\n\x1b[2G\n{result} wins!!!");
-            break;
+            println!(
+                "\n\x1b[2G\n{result} wins!!!\n\x1b[2GDo you want to play another game? Yes No:"
+            );
+
+            // TODO: ask if you wanna play a new game
+            app_state = [
+                [
+                    CellState::Me(PrevState::Empty),
+                    CellState::Empty,
+                    CellState::Empty,
+                ],
+                [CellState::Empty; 3],
+                [CellState::Empty; 3],
+            ];
+            turn = match result {
+                GameResult::WinEx => PrevState::Oh,
+                GameResult::WinOh => PrevState::Ex,
+                GameResult::Tie => PrevState::Ex,
+                GameResult::OnGoing => turn,
+            };
+            position = (0, 0);
+            turn_counter = 0_u8;
+            is_on_going = false;
         }
 
         // TODO: here we ask the AI to move
@@ -408,7 +469,6 @@ fn draw_test() {
 
 // TODO: Macros
 
-// TODO: Ask if user wants to play another game Y or N. Implement Default state to reset app_state. Do this using state in the game loop.
 // TODO: Keep score (games won by each player)
 // TODO: Test functions/coverage
 // TODO: AI - play against the computer
